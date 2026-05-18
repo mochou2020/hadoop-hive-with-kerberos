@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property>
+    <name>ssl.server.keystore.location</name>
+    <value>/etc/hadoop/ssl/keystore.jks</value>
+  </property>
+  <property>
+    <name>ssl.server.keystore.password</name>
+    <value>changeit</value>
+  </property>
+  <property>
+    <name>ssl.server.keystore.keypassword</name>
+    <value>changeit</value>
+  </property>
+  <property>
+    <name>ssl.server.truststore.location</name>
+    <value>/etc/hadoop/ssl/truststore.jks</value>
+  </property>
+  <property>
+    <name>ssl.server.truststore.password</name>
+    <value>changeit</value>
+  </property>
+</configuration>

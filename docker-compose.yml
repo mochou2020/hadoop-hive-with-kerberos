@@ -1,0 +1,285 @@
+# version: "3"
+
+services:
+  # ==================== KDC Kerberos 服务器 ====================
+  kdc:
+    image: gcavalcante8808/krb5-server:latest
+    container_name: kdc
+    hostname: kdc
+    environment:
+      - KRB5_REALM=EXAMPLE.COM
+      - KRB5_KDC=kdc
+      - KRB5_ADMINSERVER=kdc
+      - KRB5_PASS=admin
+    volumes:
+      - keytabs:/etc/security/keytab
+      - krb5kdc_data:/var/lib/krb5kdc
+      - ./Kerberos/setup-kdc.sh:/setup-kdc.sh:ro
+    entrypoint: ["/bin/sh", "/setup-kdc.sh"]
+    ports:
+      - "88:88"
+      - "88:88/udp"
+      - "464:464"
+      - "464:464/udp"
+      - "749:749"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /etc/security/keytab/nn.service.keytab && test -f /etc/security/keytab/dn.service.keytab"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+   # restart: unless-stopped
+
+  # ==================== Hadoop 服务 ====================
+  namenode:
+    build: ./dockerfiles/namenode
+    container_name: namenode
+    hostname: namenode
+    volumes:
+      - namenode:/hadoop/dfs/name
+      - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
+      - keytabs:/etc/security/keytab:ro
+    environment:
+      - CLUSTER_NAME=test
+      # Kerberos core-site 配置
+      - CORE_CONF_hadoop_security_authentication=kerberos
+      - CORE_CONF_hadoop_security_authorization=true
+      # NameNode Kerberos 配置 - 使用 FQDN 匹配 Docker 网络的 DNS 解析
+      - HDFS_CONF_dfs_namenode_kerberos_principal=nn/namenode.hadoop_default@EXAMPLE.COM
+      - HDFS_CONF_dfs_namenode_keytab_file=/etc/security/keytab/nn.service.keytab
+      - HDFS_CONF_dfs_namenode_kerberos_internal_spnego_principal=HTTP/namenode.hadoop_default@EXAMPLE.COM
+      - HDFS_CONF_dfs_namenode_kerberos_internal_spnego_keytab_file=/etc/security/keytab/spnego.service.keytab
+      # DataNode Kerberos 配置 (namenode也需要知道datanode的principal)
+      - HDFS_CONF_dfs_datanode_kerberos_principal=dn/datanode.hadoop_default@EXAMPLE.COM
+      - HDFS_CONF_dfs_datanode_keytab_file=/etc/security/keytab/dn.service.keytab
+      # HTTP Authentication (SPNEGO)
+      - CORE_CONF_hadoop_http_authentication_type=kerberos
+      - CORE_CONF_hadoop_http_authentication_kerberos_principal=HTTP/namenode.hadoop_default@EXAMPLE.COM
+      - CORE_CONF_hadoop_http_authentication_kerberos_keytab=/etc/security/keytab/spnego.service.keytab
+      # Web UI Kerberos 配置
+      - HDFS_CONF_dfs_web_authentication_kerberos_principal=HTTP/namenode.hadoop_default@EXAMPLE.COM
+      - HDFS_CONF_dfs_web_authentication_kerberos_keytab=/etc/security/keytab/spnego.service.keytab
+      
+      # WebHDFS Kerberos 配置
+      - HDFS_CONF_dfs_webhdfs_auth_kerberos_principal=HTTP/namenode.hadoop_default@EXAMPLE.COM
+      - HDFS_CONF_dfs_webhdfs_auth_kerberos_keytab=/etc/security/keytab/spnego.service.keytab
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - "50070:50070"
+      - "8020:8020"
+    depends_on:
+      kdc:
+        condition: service_healthy
+    cap_add:
+      - NET_BIND_SERVICE
+
+  datanode:
+    build: ./dockerfiles/datanode
+    container_name: datanode
+    hostname: datanode
+    volumes:
+      - datanode:/hadoop/dfs/data
+      - D:\docker_images\hadoop\datanode\hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
+      - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
+      - keytabs:/etc/security/keytab:ro
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+      # Kerberos core-site 配置
+      CORE_CONF_hadoop_security_authentication: kerberos
+      CORE_CONF_hadoop_security_authorization: "true"
+      # DataNode Kerberos 配置
+      HDFS_CONF_dfs_datanode_kerberos_principal: dn/datanode.hadoop_default@EXAMPLE.COM
+      HDFS_CONF_dfs_datanode_keytab_file: /etc/security/keytab/dn.service.keytab
+      # SASL + HTTPS 配置 (满足 checkSecureConfig 要求)
+      HDFS_CONF_dfs_data_transfer_protection: authentication
+      HDFS_CONF_dfs_http_policy: HTTPS_ONLY
+      HDFS_CONF_dfs_datanode_https_address: "0.0.0.0:50675"
+      # SPNEGO HTTP 认证
+      HDFS_CONF_dfs_web_authentication_kerberos_principal: HTTP/datanode.hadoop_default@EXAMPLE.COM
+      HDFS_CONF_dfs_web_authentication_kerberos_keytab: /etc/security/keytab/spnego.service.keytab
+    env_file:
+      - ./hadoop-hive.env
+    ports:
+      - "50675:50675"
+    user: "root"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -kf https://localhost:50675/ || curl -f http://localhost:50075/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      kdc:
+        condition: service_healthy
+      namenode:
+        condition: service_started
+    cap_add:
+      - NET_BIND_SERVICE
+
+  resourcemanager:
+    build: ./dockerfiles/resourcemanager
+    container_name: resourcemanager
+    hostname: resourcemanager
+    volumes:
+      - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
+      - keytabs:/etc/security/keytab:ro
+    ports:
+      - "8088:8088"
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50675"
+      # Kerberos core-site 配置
+      CORE_CONF_hadoop_security_authentication: kerberos
+      CORE_CONF_hadoop_security_authorization: "true"
+      # ResourceManager Kerberos 配置 - FQDN 匹配 Docker DNS
+      YARN_CONF_yarn_resourcemanager_principal: rm/resourcemanager.hadoop_default@EXAMPLE.COM
+      YARN_CONF_yarn_resourcemanager_keytab: /etc/security/keytab/rm.service.keytab
+      # HTTP Authentication (SPNEGO)
+      CORE_CONF_hadoop_http_authentication_type: kerberos
+      CORE_CONF_hadoop_http_authentication_kerberos_principal: HTTP/resourcemanager.hadoop_default@EXAMPLE.COM
+      CORE_CONF_hadoop_http_authentication_kerberos_keytab: /etc/security/keytab/spnego.service.keytab
+    env_file:
+      - ./hadoop.env
+    depends_on:
+      kdc:
+        condition: service_healthy
+      namenode:
+        condition: service_started
+      datanode:
+        condition: service_started
+
+  nodemanager:
+    build: ./dockerfiles/nodemanager
+    container_name: nodemanager
+    hostname: nodemanager
+    volumes:
+      - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
+      - keytabs:/etc/security/keytab:ro
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50675 resourcemanager:8088"
+      # Kerberos core-site 配置
+      CORE_CONF_hadoop_security_authentication: kerberos
+      CORE_CONF_hadoop_security_authorization: "true"
+      # NodeManager Kerberos 配置 - FQDN 匹配 Docker DNS
+      YARN_CONF_yarn_nodemanager_principal: nm/nodemanager.hadoop_default@EXAMPLE.COM
+      YARN_CONF_yarn_nodemanager_keytab: /etc/security/keytab/nm.service.keytab
+      # ResourceManager principal - NM 需要知道 RM 的 principal 来连接
+      YARN_CONF_yarn_resourcemanager_principal: rm/resourcemanager.hadoop_default@EXAMPLE.COM
+    env_file:
+      - ./hadoop.env
+    depends_on:
+      kdc:
+        condition: service_healthy
+      namenode:
+        condition: service_started
+      datanode:
+        condition: service_started
+      resourcemanager:
+        condition: service_started
+
+  # ==================== Hive 服务 ====================
+  hive-server:
+    build: ./dockerfiles/hive-server
+    container_name: hive-server
+    hostname: hive-server
+    env_file:
+      - ./hadoop-hive.env
+    volumes:
+      - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
+      - keytabs:/etc/security/keytab:ro
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+      # Kerberos core-site 配置
+      CORE_CONF_hadoop_security_authentication: kerberos
+      CORE_CONF_hadoop_security_authorization: "true"
+      # HiveServer2 Kerberos 配置
+      HIVE_SITE_CONF_hive_server2_authentication: KERBEROS
+      HIVE_SITE_CONF_hive_server2_authentication_kerberos_principal: hive/hive-server.hadoop_default@EXAMPLE.COM
+      HIVE_SITE_CONF_hive_server2_authentication_kerberos_keytab: /etc/security/keytab/hive.service.keytab
+      # Hive Metastore client Kerberos 配置
+      HIVE_SITE_CONF_hive_metastore_sasl_enabled: "true"
+      HIVE_SITE_CONF_hive_metastore_kerberos_principal: hive/hive-metastore.hadoop_default@EXAMPLE.COM
+      # Hadoop client Kerberos login - 让 HDFS/YARN 客户端自动登录
+      HADOOP_CLIENT_KEYTAB: /etc/security/keytab/hive.service.keytab
+      HADOOP_CLIENT_PRINCIPAL: hive/hive-server.hadoop_default@EXAMPLE.COM
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+    depends_on:
+      kdc:
+        condition: service_healthy
+      hive-metastore:
+        condition: service_started
+
+  hive-metastore:
+    build: ./dockerfiles/hive-metastore
+    container_name: hive-metastore
+    hostname: hive-metastore
+    env_file:
+      - ./hadoop-hive.env
+    volumes:
+      - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
+      - keytabs:/etc/security/keytab:ro
+    command: /opt/hive/startup.sh
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50675 hive-metastore-postgresql:5432"
+      # Kerberos core-site 配置
+      CORE_CONF_hadoop_security_authentication: kerberos
+      CORE_CONF_hadoop_security_authorization: "true"
+      # Hive Metastore Kerberos 配置
+      HIVE_SITE_CONF_hive_metastore_sasl_enabled: "true"
+      HIVE_SITE_CONF_hive_metastore_kerberos_principal: hive/hive-metastore.hadoop_default@EXAMPLE.COM
+      HIVE_SITE_CONF_hive_metastore_kerberos_keytab_file: /etc/security/keytab/hive.service.keytab
+      # Hadoop client Kerberos login
+      HADOOP_CLIENT_KEYTAB: /etc/security/keytab/hive.service.keytab
+      HADOOP_CLIENT_PRINCIPAL: hive/hive-metastore.hadoop_default@EXAMPLE.COM
+    ports:
+      - "9083:9083"
+    depends_on:
+      kdc:
+        condition: service_healthy
+      namenode:
+        condition: service_started
+      datanode:
+        condition: service_started
+      hive-metastore-postgresql:
+        condition: service_started
+
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+volumes:
+  namenode:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: 'D:\docker_images\hadoop\namenode'
+  datanode:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: 'D:\docker_images\hadoop\datanode'
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: 'D:\docker_images\hadoop\postgres_data'
+  krb5kdc_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: 'D:\docker_images\hadoop\Kerberos\krb5kdc'
+  keytabs:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: 'D:\docker_images\hadoop\keytabs'

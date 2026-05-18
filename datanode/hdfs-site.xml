@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+
+<!-- DataNode basic config -->
+<property>
+  <name>dfs.datanode.data.dir</name>
+  <value>file:///hadoop/dfs/data</value>
+</property>
+
+<property>
+  <name>dfs.permissions.enabled</name>
+  <value>false</value>
+</property>
+
+<property>
+  <name>dfs.webhdfs.enabled</name>
+  <value>true</value>
+</property>
+
+<!-- Docker networking -->
+<property>
+  <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
+  <value>false</value>
+</property>
+
+<property>
+  <name>dfs.client.use.datanode.hostname</name>
+  <value>true</value>
+</property>
+
+<property>
+  <name>dfs.datanode.use.datanode.hostname</name>
+  <value>true</value>
+</property>
+
+<!-- DataNode Kerberos config - FQDN matches Docker DNS resolution -->
+<property>
+  <name>dfs.datanode.kerberos.principal</name>
+  <value>dn/datanode.hadoop_default@EXAMPLE.COM</value>
+</property>
+
+<property>
+  <name>dfs.datanode.keytab.file</name>
+  <value>/etc/security/keytab/dn.service.keytab</value>
+</property>
+
+<!-- SASL data transfer protection - required for secure DataNode without JSVC -->
+<property>
+  <name>dfs.data.transfer.protection</name>
+  <value>authentication</value>
+</property>
+
+<!-- Block access tokens - required for SASL data transfer with Kerberos -->
+<property>
+  <name>dfs.block.access.token.enable</name>
+  <value>true</value>
+</property>
+
+<!-- HTTPS_ONLY policy - required for secure DataNode with SASL -->
+<property>
+  <name>dfs.http.policy</name>
+  <value>HTTPS_ONLY</value>
+</property>
+
+<!-- DataNode HTTPS address -->
+<property>
+  <name>dfs.datanode.https.address</name>
+  <value>0.0.0.0:50675</value>
+</property>
+
+</configuration>

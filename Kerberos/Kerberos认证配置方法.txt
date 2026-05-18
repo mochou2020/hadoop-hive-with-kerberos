@@ -1,0 +1,4 @@
+1）在每个节点上安装krb5客户端，并将KDC服务器的/etc/krb5.conf复制到所有节点的/etc/目录下
+2）在KDC上生成每个节点的keytab文件
+3）将keytab文件复制到对应的每个节点上
+4）在namenode节点配置全局启用Kerberos认证的参数，并配置namenode的主体信息（principal）和keytab文件目录，在resourcemanager配置resourcemanager的主体信息（principal）和keytab文件目录、在datanode上配置nodemanager和datanode的主体信息（principal）和keytab文件目录、hive-server和hive-metastore分别配置主体信息（principal）和keytab文件目录
