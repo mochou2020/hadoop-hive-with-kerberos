@@ -94,8 +94,9 @@ kadmin.local -q "xst -k ${KEYTAB_DIR}/hive.service.keytab -e ${ENCTYPE} hive/hiv
 
 
 # 生成一个客户端用的keytab
-kadmin.local -q "addprinc -randkey -e ${ENCTYPE} client/client@${REALM}" 2>/dev/null || echo "client/client@${REALM} principal already exists"
-kadmin.local -q "xst -k ${KEYTAB_DIR}/client.keytab -e ${ENCTYPE} client/client@${REALM}"
+# 创建用户格式的principal
+kadmin.local -q "addprinc -randkey -e ${ENCTYPE} alice@${REALM}" 2>/dev/null || echo "alice@${REALM} principal already exists"
+kadmin.local -q "xst -k ${KEYTAB_DIR}/alice.keytab -e ${ENCTYPE} alice@${REALM}"
 
 # Set permissions
 chmod -R 755 ${KEYTAB_DIR}

@@ -44,11 +44,14 @@ services:
       # Kerberos core-site 配置
       - CORE_CONF_hadoop_security_authentication=kerberos
       - CORE_CONF_hadoop_security_authorization=true
+      - CORE_CONF_hadoop_proxyuser_hive_hosts=*
+      - CORE_CONF_hadoop_proxyuser_hive_groups=*
       # NameNode Kerberos 配置 - 使用 FQDN 匹配 Docker 网络的 DNS 解析
       - HDFS_CONF_dfs_namenode_kerberos_principal=nn/namenode.hadoop_default@EXAMPLE.COM
       - HDFS_CONF_dfs_namenode_keytab_file=/etc/security/keytab/nn.service.keytab
       - HDFS_CONF_dfs_namenode_kerberos_internal_spnego_principal=HTTP/namenode.hadoop_default@EXAMPLE.COM
       - HDFS_CONF_dfs_namenode_kerberos_internal_spnego_keytab_file=/etc/security/keytab/spnego.service.keytab
+
       # DataNode Kerberos 配置 (namenode也需要知道datanode的principal)
       - HDFS_CONF_dfs_datanode_kerberos_principal=dn/datanode.hadoop_default@EXAMPLE.COM
       - HDFS_CONF_dfs_datanode_keytab_file=/etc/security/keytab/dn.service.keytab
@@ -131,6 +134,8 @@ services:
       # Kerberos core-site 配置
       CORE_CONF_hadoop_security_authentication: kerberos
       CORE_CONF_hadoop_security_authorization: "true"
+      CORE_CONF_hadoop_proxyuser_hive_hosts: "*"
+      CORE_CONF_hadoop_proxyuser_hive_groups: "*"
       # ResourceManager Kerberos 配置 - FQDN 匹配 Docker DNS
       YARN_CONF_yarn_resourcemanager_principal: rm/resourcemanager.hadoop_default@EXAMPLE.COM
       YARN_CONF_yarn_resourcemanager_keytab: /etc/security/keytab/rm.service.keytab
@@ -193,13 +198,18 @@ services:
       # Kerberos core-site 配置
       CORE_CONF_hadoop_security_authentication: kerberos
       CORE_CONF_hadoop_security_authorization: "true"
+      CORE_CONF_hadoop_proxyuser_hive_hosts: "*"
+      CORE_CONF_hadoop_proxyuser_hive_groups: "*"
       # HiveServer2 Kerberos 配置
       HIVE_SITE_CONF_hive_server2_authentication: KERBEROS
       HIVE_SITE_CONF_hive_server2_authentication_kerberos_principal: hive/hive-server.hadoop_default@EXAMPLE.COM
       HIVE_SITE_CONF_hive_server2_authentication_kerberos_keytab: /etc/security/keytab/hive.service.keytab
+      HIVE_SITE_CONF_hive_server2_enable_doAs: "true"
       # Hive Metastore client Kerberos 配置
       HIVE_SITE_CONF_hive_metastore_sasl_enabled: "true"
       HIVE_SITE_CONF_hive_metastore_kerberos_principal: hive/hive-metastore.hadoop_default@EXAMPLE.COM
+      # YARN RM principal - Hive 需要 RM 的 principal 作为 delegation token renewer
+      YARN_CONF_yarn_resourcemanager_principal: rm/resourcemanager.hadoop_default@EXAMPLE.COM
       # Hadoop client Kerberos login - 让 HDFS/YARN 客户端自动登录
       HADOOP_CLIENT_KEYTAB: /etc/security/keytab/hive.service.keytab
       HADOOP_CLIENT_PRINCIPAL: hive/hive-server.hadoop_default@EXAMPLE.COM
