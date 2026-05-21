@@ -11,6 +11,8 @@ services:
       - KRB5_KDC=kdc
       - KRB5_ADMINSERVER=kdc
       - KRB5_PASS=admin
+      - GENERIC_TIMEZONE=Asia/Shanghai
+      - TZ=Asia/Shanghai
     volumes:
       - keytabs:/etc/security/keytab
       - krb5kdc_data:/var/lib/krb5kdc
@@ -41,6 +43,8 @@ services:
       - keytabs:/etc/security/keytab:ro
     environment:
       - CLUSTER_NAME=test
+      - GENERIC_TIMEZONE=Asia/Shanghai
+      - TZ=Asia/Shanghai
       # Kerberos core-site 配置
       - CORE_CONF_hadoop_security_authentication=kerberos
       - CORE_CONF_hadoop_security_authorization=true
@@ -87,6 +91,8 @@ services:
       - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
       - keytabs:/etc/security/keytab:ro
     environment:
+      GENERIC_TIMEZONE: Asia/Shanghai
+      TZ: Asia/Shanghai
       SERVICE_PRECONDITION: "namenode:50070"
       # Kerberos core-site 配置
       CORE_CONF_hadoop_security_authentication: kerberos
@@ -130,6 +136,8 @@ services:
     ports:
       - "8086:8088"
     environment:
+      GENERIC_TIMEZONE: Asia/Shanghai
+      TZ: Asia/Shanghai
       SERVICE_PRECONDITION: "namenode:50070 datanode:50675"
       # Kerberos core-site 配置
       CORE_CONF_hadoop_security_authentication: kerberos
@@ -161,6 +169,8 @@ services:
       - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
       - keytabs:/etc/security/keytab:ro
     environment:
+      GENERIC_TIMEZONE: Asia/Shanghai
+      TZ: Asia/Shanghai
       SERVICE_PRECONDITION: "namenode:50070 datanode:50675 resourcemanager:8088"
       # Kerberos core-site 配置
       CORE_CONF_hadoop_security_authentication: kerberos
@@ -193,6 +203,8 @@ services:
       - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
       - keytabs:/etc/security/keytab:ro
     environment:
+      GENERIC_TIMEZONE: Asia/Shanghai
+      TZ: Asia/Shanghai
       HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
       SERVICE_PRECONDITION: "hive-metastore:9083"
       # Kerberos core-site 配置
@@ -233,6 +245,8 @@ services:
       - keytabs:/etc/security/keytab:ro
     command: /opt/hive/startup.sh
     environment:
+      GENERIC_TIMEZONE: Asia/Shanghai
+      TZ: Asia/Shanghai
       SERVICE_PRECONDITION: "namenode:50070 datanode:50675 hive-metastore-postgresql:5432"
       # Kerberos core-site 配置
       CORE_CONF_hadoop_security_authentication: kerberos
@@ -258,6 +272,9 @@ services:
 
   hive-metastore-postgresql:
     image: bde2020/hive-metastore-postgresql:2.3.0
+    environment:
+      GENERIC_TIMEZONE: Asia/Shanghai
+      TZ: Asia/Shanghai
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
