@@ -1,4 +1,16 @@
 #!/bin/sh
+set -e
+
+# ✅ 安装 GNU coreutils（包含真正的 date）
+apk add --no-cache coreutils tzdata
+
+# ✅ 强制设置
+export TZ=Asia/Shanghai
+echo "Asia/Shanghai" > /etc/timezone
+cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+echo "✅ 当前时间: $(date)"
+echo "✅ 时间戳: $(date +%s)"
+
 
 REALM="EXAMPLE.COM"
 KEYTAB_DIR="/etc/security/keytab"
