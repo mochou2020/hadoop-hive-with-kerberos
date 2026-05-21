@@ -83,7 +83,7 @@ services:
     hostname: datanode
     volumes:
       - datanode:/hadoop/dfs/data
-      - D:\docker_images\hadoop\datanode\hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
+      - /data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/datanode/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
       - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
       - keytabs:/etc/security/keytab:ro
     environment:
@@ -128,7 +128,7 @@ services:
       - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
       - keytabs:/etc/security/keytab:ro
     ports:
-      - "8088:8088"
+      - "8086:8088"
     environment:
       SERVICE_PRECONDITION: "namenode:50070 datanode:50675"
       # Kerberos core-site 配置
@@ -268,28 +268,28 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: 'D:\docker_images\hadoop\namenode'
+      device: '/data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/namenode'
   datanode:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: 'D:\docker_images\hadoop\datanode'
+      device: '/data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/datanode'
   postgres_data:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: 'D:\docker_images\hadoop\postgres_data'
+      device: '/data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/postgres_data'
   krb5kdc_data:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: 'D:\docker_images\hadoop\Kerberos\krb5kdc'
+      device: '/data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/Kerberos/krb5kdc'
   keytabs:
     driver: local
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: 'D:\docker_images\hadoop\keytabs'
+      device: '/data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/keytabs'
