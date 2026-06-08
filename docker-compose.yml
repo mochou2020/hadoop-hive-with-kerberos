@@ -73,7 +73,7 @@ services:
     env_file:
       - ./hadoop-hive.env
     ports:
-      - "50070:50070"
+      - "8021:50070"
       - "8020:8020"
     depends_on:
       kdc:
@@ -111,6 +111,7 @@ services:
       - ./hadoop-hive.env
     ports:
       - "50675:50675"
+      - "8022:50010"
     user: "root"
     healthcheck:
       test: ["CMD-SHELL", "curl -kf https://localhost:50675/ || curl -f http://localhost:50075/ || exit 1"]
