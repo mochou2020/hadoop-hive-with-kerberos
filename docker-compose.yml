@@ -45,6 +45,7 @@ services:
       - CLUSTER_NAME=test
       - GENERIC_TIMEZONE=Asia/Shanghai
       - TZ=Asia/Shanghai
+      - SERVICE_PRECONDITION=kdc:88
       # Kerberos core-site 配置
       - CORE_CONF_hadoop_security_authentication=kerberos
       - CORE_CONF_hadoop_security_authorization=true
@@ -87,7 +88,7 @@ services:
     hostname: datanode
     volumes:
       - datanode:/hadoop/dfs/data
-      - /data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/datanode/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
+      #  - /data3/home/user3/bigdata_test_env/hadoop-hive-with-kerberos/datanode/hdfs-site.xml:/etc/hadoop/hdfs-site.xml:ro
       - ./Kerberos/krb5.conf:/etc/krb5.conf:ro
       - keytabs:/etc/security/keytab:ro
     environment:
@@ -107,11 +108,14 @@ services:
       # SPNEGO HTTP 认证
       HDFS_CONF_dfs_web_authentication_kerberos_principal: HTTP/datanode.hadoop_default@EXAMPLE.COM
       HDFS_CONF_dfs_web_authentication_kerberos_keytab: /etc/security/keytab/spnego.service.keytab
+      # datanode 向namenode注册地址
+      HDFS_CONF_dfs_datanode_hostname: "188.250.108.134"
+      HDFS_CONF_dfs_datanode_address: "0.0.0.0:8022"
     env_file:
       - ./hadoop-hive.env
     ports:
       - "50675:50675"
-      - "8022:50010"
+      - "8022:8022"
     user: "root"
     healthcheck:
       test: ["CMD-SHELL", "curl -kf https://localhost:50675/ || curl -f http://localhost:50075/ || exit 1"]
