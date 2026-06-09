@@ -109,13 +109,13 @@ services:
       HDFS_CONF_dfs_web_authentication_kerberos_principal: HTTP/datanode.hadoop_default@EXAMPLE.COM
       HDFS_CONF_dfs_web_authentication_kerberos_keytab: /etc/security/keytab/spnego.service.keytab
       # datanode 向namenode注册地址
-      HDFS_CONF_dfs_datanode_hostname: "188.250.108.134"
-      HDFS_CONF_dfs_datanode_address: "0.0.0.0:8022"
+      # HDFS_CONF_dfs_datanode_hostname: "188.250.108.134"
+      # HDFS_CONF_dfs_datanode_address: "0.0.0.0:8022"
     env_file:
       - ./hadoop-hive.env
     ports:
       - "50675:50675"
-      - "8022:8022"
+      - "8022:10000"
     user: "root"
     healthcheck:
       test: ["CMD-SHELL", "curl -kf https://localhost:50675/ || curl -f http://localhost:50075/ || exit 1"]
